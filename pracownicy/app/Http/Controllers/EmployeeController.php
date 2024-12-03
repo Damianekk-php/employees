@@ -110,7 +110,7 @@ class EmployeeController extends Controller
 
         $department = $employee->departments->first()->dept_name ?? 'Brak departamentu';
         $title = $employee->titles->last()->title ?? 'Brak tytułu';
-        $salary = $employee->salaries->first()->salary ?? 0;
+        $salary = $employee->salaries->last()->salary ?? 0;
         $totalSalary = $employee->salaries->sum('salary');
 
         $pdfData = [
