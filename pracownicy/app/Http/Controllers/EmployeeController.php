@@ -6,6 +6,11 @@ use App\Models\Employee;
 use App\Models\Department;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
+use ZipStream\ZipStream;
+use ZipStream\OperationMode;
+use Illuminate\Support\Facades\Storage;
+use ZipStream\Option\Archive;
+
 
 class EmployeeController extends Controller
 {
@@ -39,7 +44,6 @@ class EmployeeController extends Controller
             });
         }
 
-
         if ($request->filled('gender')) {
             $query->where('gender', $request->input('gender'));
         }
@@ -58,8 +62,9 @@ class EmployeeController extends Controller
             });
         }
 
-        $employees = $query->paginate(10);
         $totalEmployees = $query->count();
+
+        $employees = $query->paginate(10);
 
         return view('employees.index', compact('employees', 'departments', 'totalEmployees'));
     }
@@ -120,19 +125,145 @@ class EmployeeController extends Controller
         $salary = $employee->salaries->last()->salary ?? 0;
         $totalSalary = $employee->salaries->sum('salary');
 
+        $titleHistory = $employee->titles->map(function ($title) {
+            return [
+                'title' => $title->title,
+                'from_date' => $title->from_date,
+                'to_date' => $title->to_date !== '9999-01-01' ? $title->to_date : 'obecnie'
+            ];
+        });
+
+        $salaryHistory = $employee->salaries->map(function ($salary) {
+            return [
+                'salary' => $salary->salary,
+                'from_date' => $salary->from_date,
+                'to_date' => $salary->to_date !== '9999-01-01' ? $salary->to_date : 'obecnie'
+            ];
+        });
+
         $pdfData = [
             'first_name' => $employee->first_name,
             'last_name' => $employee->last_name,
             'department' => $department,
             'title' => $title,
             'salary' => $salary,
-            'totalSalary' => $totalSalary
+            'totalSalary' => $totalSalary,
+            'titleHistory' => $titleHistory,
+            'salaryHistory' => $salaryHistory,
         ];
 
         $pdf = Pdf::loadView('pdf.employee', $pdfData);
 
-        return $pdf->download("{$first_name}_{$last_name}_pdf.pdf");
+
+        return $pdf->download("{$first_name}_{$last_name}.pdf"); // Pobieranie PDF
     }
+
+
+    public function show($id)
+    {
+        $employee = Employee::with([
+            'departments' => function ($query) {
+                $query->orderBy('dept_emp.from_date');
+            },
+            'titles' => function ($query) {
+                $query->orderBy('from_date');
+            },
+            'salaries' => function ($query) {
+                $query->orderBy('from_date');
+            }
+        ])->findOrFail($id);
+
+        $currentDepartment = $employee->departments->where('to_date', '9999-01-01')->first()
+            ?? $employee->departments->last();
+
+        $currentTitle = $employee->titles->where('to_date', '9999-01-01')->first()
+            ?? $employee->titles->last();
+
+        $currentSalary = $employee->salaries->where('to_date', '9999-01-01')->first()
+            ?? $employee->salaries->last();
+
+        $titleHistory = $employee->titles->map(function ($title) {
+            return [
+                'title' => $title->title,
+                'from_date' => $title->from_date,
+                'to_date' => $title->to_date !== '9999-01-01' ? $title->to_date : 'obecnie'
+            ];
+        });
+
+        $salaryHistory = $employee->salaries->map(function ($salary) {
+            return [
+                'salary' => $salary->salary,
+                'from_date' => $salary->from_date,
+                'to_date' => $salary->to_date !== '9999-01-01' ? $salary->to_date : 'obecnie'
+            ];
+        });
+
+        return view('employees.show', compact('employee', 'currentDepartment', 'currentTitle', 'currentSalary', 'titleHistory', 'salaryHistory'));
+    }
+
+    public function generatePdfs(Request $request)
+    {
+        $employeeIds = $request->input('employees', []);
+
+        if (empty($employeeIds)) {
+            return redirect()->route('employees.index')->with('error', 'Nie wybrano żadnego pracownika.');
+        }
+
+        $employees = Employee::whereIn('emp_no', $employeeIds)->get();
+
+        $pdfPaths = [];
+
+        foreach ($employees as $employee) {
+            $department = $employee->departments->first()->dept_name ?? 'Brak departamentu';
+            $title = $employee->titles->last()->title ?? 'Brak tytułu';
+            $salary = $employee->salaries->first()->salary ?? 0;
+            $totalSalary = $employee->salaries->sum('salary');
+
+            $titleHistory = $employee->titles->map(function ($title) {
+                return [
+                    'title' => $title->title,
+                    'from_date' => $title->from_date,
+                    'to_date' => $title->to_date !== '9999-01-01' ? $title->to_date : 'obecnie'
+                ];
+            });
+
+            $salaryHistory = $employee->salaries->map(function ($salary) {
+                return [
+                    'salary' => $salary->salary,
+                    'from_date' => $salary->from_date,
+                    'to_date' => $salary->to_date !== '9999-01-01' ? $salary->to_date : 'obecnie'
+                ];
+            });
+
+            $pdfData = [
+                'first_name' => $employee->first_name,
+                'last_name' => $employee->last_name,
+                'department' => $department,
+                'title' => $title,
+                'salary' => $salary,
+                'totalSalary' => $totalSalary,
+                'titleHistory' => $titleHistory,
+                'salaryHistory' => $salaryHistory,
+            ];
+
+            $pdf = Pdf::loadView('pdf.employee', $pdfData);
+            $fileName = "{$employee->first_name}_{$employee->last_name}_pdf.pdf";
+            $pdfPath = storage_path("app/pdfs/{$fileName}");
+
+            $pdf->save($pdfPath);
+
+            $pdfPaths[] = $pdfPath;
+        }
+
+        return redirect()->route('employees.index');
+    }
+
+
+
+
+
+
+
 }
 
 

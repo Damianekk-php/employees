@@ -49,6 +49,22 @@
             text-align: right;
             font-weight: bold;
         }
+
+        .history-table {
+            margin-top: 30px;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .history-table th, .history-table td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        .history-table th {
+            background-color: #f4f4f4;
+        }
     </style>
 </head>
 <body>
@@ -74,13 +90,55 @@
             </tr>
             <tr>
                 <th>Obecna pensja</th>
-                <td>{{ $salary }}</td>
+                <td>{{ $salary }} PLN</td>
             </tr>
         </table>
 
         <div class="total-salary">
-            <p><strong>Calkowita suma wyplat: {{ $totalSalary }}</strong></p>
+            <p><strong>Calkowita suma wyplat: {{ $totalSalary }} PLN</strong></p>
         </div>
+    </div>
+
+    <div class="history">
+        <h3>Historia tytulow</h3>
+        <table class="history-table">
+            <thead>
+            <tr>
+                <th>Tytul</th>
+                <th>Od</th>
+                <th>Do</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach ($titleHistory as $history)
+                <tr>
+                    <td>{{ $history['title'] }}</td>
+                    <td>{{ $history['from_date'] }}</td>
+                    <td>{{ $history['to_date'] }}</td>
+                </tr>
+            @endforeach
+            </tbody>
+        </table>
+
+        <h3>Historia pensji</h3>
+        <table class="history-table">
+            <thead>
+            <tr>
+                <th>Pensja</th>
+                <th>Od</th>
+                <th>Do</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach ($salaryHistory as $history)
+                <tr>
+                    <td>{{ $history['salary'] }} PLN</td>
+                    <td>{{ $history['from_date'] }}</td>
+                    <td>{{ $history['to_date'] }}</td>
+                </tr>
+            @endforeach
+            </tbody>
+        </table>
     </div>
 </div>
 
