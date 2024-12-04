@@ -21,16 +21,22 @@ class EmployeeController extends Controller
         if ($request->filled('status')) {
             $status = $request->input('status');
 
-            if ($status === 'current') {
-                $query->whereHas('titles', function ($q) {
-                    $q->whereNull('to_date')
-                        ->orWhere('to_date', '>', now());
+            $query->whereHas('titles', function ($q) use ($status) {
+                $q->whereIn('titles.to_date', function ($subQuery) {
+                    $subQuery->selectRaw('MAX(to_date)')
+                        ->from('titles')
+                        ->whereColumn('titles.emp_no', 'employees.emp_no');
                 });
-            } elseif ($status === 'past') {
-                $query->whereHas('titles', function ($q) {
+
+                if ($status === 'current') {
+                    $q->where(function ($q) {
+                        $q->whereNull('to_date')
+                            ->orWhere('to_date', '9999-01-01');
+                    });
+                } elseif ($status === 'past') {
                     $q->where('to_date', '<', now());
-                });
-            }
+                }
+            });
         }
 
 
@@ -53,8 +59,9 @@ class EmployeeController extends Controller
         }
 
         $employees = $query->paginate(10);
+        $totalEmployees = $query->count();
 
-        return view('employees.index', compact('employees', 'departments'));
+        return view('employees.index', compact('employees', 'departments', 'totalEmployees'));
     }
 
 

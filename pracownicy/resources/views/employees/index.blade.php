@@ -38,6 +38,9 @@
                 </div>
             </div>
         </form>
+        <div class="mb-4 text-center">
+            <strong>Liczba wyświetlanych pracowników: {{ $totalEmployees }}</strong>
+        </div>
 
         <div class="table-responsive">
             <table class="table table-bordered table-striped">
