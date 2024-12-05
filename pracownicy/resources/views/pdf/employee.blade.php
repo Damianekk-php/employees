@@ -100,41 +100,23 @@
     </div>
 
     <div class="history">
-        <h3>Historia tytulow</h3>
+        <h3>Historia tytulow i pensji</h3>
         <table class="history-table">
             <thead>
             <tr>
                 <th>Tytul</th>
-                <th>Od</th>
-                <th>Do</th>
-            </tr>
-            </thead>
-            <tbody>
-            @foreach ($titleHistory as $history)
-                <tr>
-                    <td>{{ $history['title'] }}</td>
-                    <td>{{ $history['from_date'] }}</td>
-                    <td>{{ $history['to_date'] }}</td>
-                </tr>
-            @endforeach
-            </tbody>
-        </table>
-
-        <h3>Historia pensji</h3>
-        <table class="history-table">
-            <thead>
-            <tr>
                 <th>Pensja</th>
                 <th>Od</th>
                 <th>Do</th>
             </tr>
             </thead>
             <tbody>
-            @foreach ($salaryHistory as $history)
+            @foreach ($history as $entry)
                 <tr>
-                    <td>{{ $history['salary'] }} PLN</td>
-                    <td>{{ $history['from_date'] }}</td>
-                    <td>{{ $history['to_date'] }}</td>
+                    <td>{{ $entry['title'] }}</td>
+                    <td>{{ $entry['salary'] }} PLN</td>
+                    <td>{{ $entry['from_date'] }}</td>
+                    <td>{{ $entry['to_date'] }}</td>
                 </tr>
             @endforeach
             </tbody>
